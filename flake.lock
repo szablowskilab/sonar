@@ -20,7 +20,41 @@
         "url": "https://flakehub.com/f/nix-community/fenix/0.1"
       }
     },
+    "intarna": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1782162890,
+        "narHash": "sha256-kwbgvG9uUdhCVCw913LP3Kpjk1MxqppNgGsQ5cY6FYg=",
+        "owner": "szablowskilab",
+        "repo": "IntaRNA-flake",
+        "rev": "cd68d08fdee884c87203338f830b70a2fdb0ea98",
+        "type": "github"
+      },
+      "original": {
+        "owner": "szablowskilab",
+        "repo": "IntaRNA-flake",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1781577229,
+        "narHash": "sha256-lrp67w8AulE9Ks53n27I45ADSzbOCn4H+CNW1Ck8B+8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "567a49d1913ce81ac6e9582e3553dd90a955875f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1781074563,
         "narHash": "sha256-md8WlXOlfnIeHeOScMTTHFyf2d6iaTwPl2apR5EQ3P4=",
@@ -37,7 +71,8 @@
     "root": {
       "inputs": {
         "fenix": "fenix",
-        "nixpkgs": "nixpkgs"
+        "intarna": "intarna",
+        "nixpkgs": "nixpkgs_2"
       }
     },
     "rust-analyzer-src": {

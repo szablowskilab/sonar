@@ -7,6 +7,7 @@
       url = "https://flakehub.com/f/nix-community/fenix/0.1";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    intarna.url = "github:szablowskilab/IntaRNA-flake";
   };
 
   outputs =
@@ -29,6 +30,7 @@
               overlays = [
                 inputs.self.overlays.default
               ];
+              config.allowUnfree = true;
             };
           }
         );
@@ -61,7 +63,10 @@
               cargo-edit
               cargo-watch
               rust-analyzer
+              viennarna
+              minimap2
               self.formatter.${system}
+              inputs.intarna.packages.${system}.default
             ];
 
             env = {
