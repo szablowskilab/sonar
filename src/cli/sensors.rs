@@ -82,6 +82,10 @@ pub struct Args {
     #[clap(long, default_value_t = 100)]
     pub max_candidates: usize,
 
+    /// Do not spread out candidate designs across the target sequence
+    #[clap(long, default_value_t = false)]
+    pub no_spread: bool,
+
     /// Allow IUPAC nucleotide codes in the target sequence
     #[clap(long, default_value_t = false)]
     pub allow_iupac: bool,
@@ -105,6 +109,7 @@ impl From<Args> for DesignParams {
             min_stop_distance: args.min_stop_distance,
             frame: args.frame,
             max_candidates: args.max_candidates,
+            no_spread: args.no_spread,
             allow_iupac: args.allow_iupac,
         }
     }

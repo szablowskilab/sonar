@@ -26,6 +26,9 @@ pub struct DesignParams {
     /// Max number of candidates to output.
     pub max_candidates: usize,
 
+    /// Do not spread out candidate designs across the target sequence.
+    pub no_spread: bool,
+
     /// Allow IUPAC nucleotide codes in the target sequence.
     pub allow_iupac: bool,
 }
@@ -161,9 +164,13 @@ pub fn generate_ses_lib(
     }
 
     candidates.sort_by(compare_candidates);
-    if candidates.len() > design_params.max_candidates {
-        candidates.truncate(design_params.max_candidates);
-    }
+    limit_candidates(
+        &mut candidates,
+        design_params.max_candidates,
+        design_params.no_spread,
+        region_start0,
+        region_end1,
+    );
 
     Ok(candidates)
 }
@@ -246,6 +253,87 @@ fn compare_candidates(a: &Candidate, b: &Candidate) -> Ordering {
         },
         other => other,
     }
+}
+
+fn limit_candidates(
+    candidates: &mut Vec<Candidate>,
+    max_candidates: usize,
+    no_spread: bool,
+    region_start0: usize,
+    region_end1: usize,
+) {
+    if candidates.len() <= max_candidates {
+        return;
+    }
+
+    if no_spread {
+        candidates.truncate(max_candidates);
+    } else {
+        *candidates =
+            select_spread_candidates(candidates, max_candidates, region_start0, region_end1);
+    }
+}
+
+fn select_spread_candidates(
+    candidates: &[Candidate],
+    max_candidates: usize,
+    region_start0: usize,
+    region_end1: usize,
+) -> Vec<Candidate> {
+    if max_candidates == 0 || candidates.is_empty() {
+        return Vec::new();
+    }
+
+    let region_len = region_end1.saturating_sub(region_start0);
+    let mut selected_indices = Vec::new();
+    let mut selected_index_set = HashSet::new();
+
+    if region_len > 0 {
+        for bin_index in 0..max_candidates {
+            let bin_start = region_start0 + (region_len * bin_index) / max_candidates;
+            let bin_end = region_start0 + (region_len * (bin_index + 1)) / max_candidates;
+
+            if let Some(candidate_index) =
+                candidates
+                    .iter()
+                    .enumerate()
+                    .find_map(|(candidate_index, candidate)| {
+                        (!selected_index_set.contains(&candidate_index)
+                            && candidate_center0(candidate) >= bin_start
+                            && candidate_center0(candidate) < bin_end)
+                            .then_some(candidate_index)
+                    })
+            {
+                selected_indices.push(candidate_index);
+                selected_index_set.insert(candidate_index);
+            }
+        }
+    }
+
+    for candidate_index in 0..candidates.len() {
+        if selected_indices.len() == max_candidates {
+            break;
+        }
+        if selected_index_set.insert(candidate_index) {
+            selected_indices.push(candidate_index);
+        }
+    }
+
+    let mut selected = selected_indices
+        .into_iter()
+        .map(|index| candidates[index].clone())
+        .collect::<Vec<_>>();
+    selected.sort_by(|a, b| {
+        a.target_start
+            .cmp(&b.target_start)
+            .then_with(|| a.target_end.cmp(&b.target_end))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+    selected
+}
+
+fn candidate_center0(candidate: &Candidate) -> usize {
+    ((candidate.target_start - 1) + candidate.target_end) / 2
 }
 
 /// Find CCA seeds in the target sequence.
@@ -471,6 +559,7 @@ mod tests {
             min_stop_distance: 10,
             frame: 0,
             max_candidates: 10,
+            no_spread: false,
             allow_iupac: false,
         }
     }
@@ -481,6 +570,28 @@ mod tests {
             target[offset..offset + 3].copy_from_slice(b"CCA");
         }
         String::from_utf8(target).unwrap()
+    }
+
+    fn test_candidate(id: &str, target_start: usize, target_end: usize, score: f64) -> Candidate {
+        Candidate {
+            id: id.to_string(),
+            target_id: "target1".to_string(),
+            target_start,
+            target_end,
+            ses_length: target_end - target_start + 1,
+            seed_target_pos: Vec::new(),
+            seed_sequence: "CCA".to_string(),
+            designed_stop_pos: Vec::new(),
+            final_sesrna: String::new(),
+            edited_stops: Vec::new(),
+            downstream_atg: false,
+            gc_content: 50.0,
+            score,
+            fail_reason: String::new(),
+            designed_stop_count: 1,
+            window_index: 0,
+            seed_index: 0,
+        }
     }
 
     #[test]
@@ -510,6 +621,62 @@ mod tests {
     fn reverse_complement_sanity_check() {
         let got = String::from_utf8(reverse_complement_bytes(b"ACGTCCA")).unwrap();
         assert_eq!(got, "TGGACGT");
+    }
+
+    #[test]
+    fn no_spread_limits_to_top_scoring_candidates() {
+        let mut candidates = vec![
+            test_candidate("cand_0003", 201, 220, 30.0),
+            test_candidate("cand_0001", 1, 20, 100.0),
+            test_candidate("cand_0002", 101, 120, 50.0),
+        ];
+
+        candidates.sort_by(compare_candidates);
+        limit_candidates(&mut candidates, 2, true, 0, 300);
+
+        let ids = candidates
+            .iter()
+            .map(|candidate| candidate.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec!["cand_0001", "cand_0002"]);
+    }
+
+    #[test]
+    fn spread_limits_to_best_candidate_per_region_bin() {
+        let mut candidates = vec![
+            test_candidate("early_second", 31, 50, 90.0),
+            test_candidate("late", 281, 300, 40.0),
+            test_candidate("middle", 141, 160, 50.0),
+            test_candidate("early_best", 1, 20, 100.0),
+        ];
+
+        candidates.sort_by(compare_candidates);
+        limit_candidates(&mut candidates, 3, false, 0, 300);
+
+        let ids = candidates
+            .iter()
+            .map(|candidate| candidate.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec!["early_best", "middle", "late"]);
+    }
+
+    #[test]
+    fn spread_fills_empty_bins_with_best_unselected_candidates() {
+        let mut candidates = vec![
+            test_candidate("early_second", 31, 50, 90.0),
+            test_candidate("late", 281, 300, 80.0),
+            test_candidate("early_best", 1, 20, 100.0),
+            test_candidate("early_third", 61, 80, 70.0),
+        ];
+
+        candidates.sort_by(compare_candidates);
+        limit_candidates(&mut candidates, 3, false, 0, 300);
+
+        let ids = candidates
+            .iter()
+            .map(|candidate| candidate.id.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(ids, vec!["early_best", "early_second", "late"]);
     }
 
     #[test]
