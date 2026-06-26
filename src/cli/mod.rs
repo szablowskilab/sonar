@@ -17,8 +17,7 @@ pub enum Commands {
     /// Generate an RNA sensor library for a given target
     #[clap(arg_required_else_help = true)]
     Gen(SensorArgs),
-
-    /// Filter RNA sensor candidates
-    #[clap(arg_required_else_help = true)]
-    Filter(SensorArgs),
+    // /// Filter RNA sensor candidates
+    // #[clap(arg_required_else_help = true)]
+    // Filter(SensorArgs),
 }

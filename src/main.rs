@@ -10,6 +10,5 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Commands::Gen(args) => cli::sensors::generate_candidates(args),
-        Commands::Filter(_args) => Ok(()),
     }
 }
