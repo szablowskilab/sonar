@@ -1,4 +1,4 @@
-name: Build Windows x86_64 CLI
+name: Build Linux x86_64 CLI
 
 on:
     push:
@@ -7,9 +7,9 @@ on:
     workflow_dispatch:
 
 jobs:
-    build-windows-x86_64:
-        name: Build sonar for Windows x86_64
-        runs-on: windows-latest
+    build-linux-x86_64:
+        name: Build sonar for Linux x86_64
+        runs-on: ubuntu-latest
 
         steps:
             - name: Checkout repository
@@ -18,14 +18,14 @@ jobs:
             - name: Install Rust toolchain
               uses: dtolnay/rust-toolchain@stable
               with:
-                  targets: x86_64-pc-windows-msvc
+                  targets: x86_64-unknown-linux-gnu
 
             - name: Build release binary
-              run: cargo build --locked --release --target x86_64-pc-windows-msvc --bin sonar
+              run: cargo build --locked --release --target x86_64-unknown-linux-gnu --bin sonar
 
-            - name: Upload sonar.exe
+            - name: Upload sonar
               uses: actions/upload-artifact@v4
               with:
-                  name: sonar-windows-x86_64
-                  path: target/x86_64-pc-windows-msvc/release/sonar.exe
+                  name: sonar-linux-x86_64
+                  path: target/x86_64-unknown-linux-gnu/release/sonar
                   if-no-files-found: error

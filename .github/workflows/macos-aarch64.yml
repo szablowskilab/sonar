@@ -1,4 +1,4 @@
-name: Build Windows x86_64 CLI
+name: Build macOS Apple Silicon CLI
 
 on:
     push:
@@ -7,9 +7,9 @@ on:
     workflow_dispatch:
 
 jobs:
-    build-windows-x86_64:
-        name: Build sonar for Windows x86_64
-        runs-on: windows-latest
+    build-macos-aarch64:
+        name: Build sonar for macOS Apple Silicon
+        runs-on: macos-latest
 
         steps:
             - name: Checkout repository
@@ -18,14 +18,14 @@ jobs:
             - name: Install Rust toolchain
               uses: dtolnay/rust-toolchain@stable
               with:
-                  targets: x86_64-pc-windows-msvc
+                  targets: aarch64-apple-darwin
 
             - name: Build release binary
-              run: cargo build --locked --release --target x86_64-pc-windows-msvc --bin sonar
+              run: cargo build --locked --release --target aarch64-apple-darwin --bin sonar
 
-            - name: Upload sonar.exe
+            - name: Upload sonar
               uses: actions/upload-artifact@v4
               with:
-                  name: sonar-windows-x86_64
-                  path: target/x86_64-pc-windows-msvc/release/sonar.exe
+                  name: sonar-macos-aarch64
+                  path: target/aarch64-apple-darwin/release/sonar
                   if-no-files-found: error
