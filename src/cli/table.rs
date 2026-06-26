@@ -39,7 +39,6 @@ fn candidate_tsv(candidate: &Candidate) -> String {
         candidate.ses_length.to_string(),
         seed_positions,
         designed_stops,
-        candidate.final_sesrna.clone(),
         edits,
         candidate.downstream_atg.to_string(),
         format!("{:.2}", candidate.gc_content),
@@ -50,7 +49,7 @@ fn candidate_tsv(candidate: &Candidate) -> String {
 }
 
 fn tsv_header() -> &'static str {
-    "candidate_id\ttarget_id\ttarget_start\ttarget_end\tses_length\tseed_target_pos\tdesigned_stop_pos\tfinal_sesrna\tedited_stops\tdownstream_atg\tgc_content\tscore\tfail_reason"
+    "candidate_id\ttarget_id\ttarget_start\ttarget_end\tses_length\tseed_target_pos\tdesigned_stop_pos\tedited_stops\tdownstream_atg\tgc_content\tscore\tfail_reason"
 }
 
 #[cfg(test)]

@@ -201,4 +201,26 @@ mod tests {
             .to_string()
         );
     }
+
+    #[test]
+    fn args_map_no_spread_to_design_params() {
+        let args = Args {
+            target: PathBuf::from("target.fa"),
+            region: None,
+            ses_length: 200..=300,
+            stop_count: 1,
+            stop_window: 80..=220,
+            min_stop_distance: 10,
+            frame: 0,
+            max_candidates: 100,
+            no_spread: true,
+            allow_iupac: false,
+            table: None,
+            fasta: None,
+        };
+
+        let design_params = DesignParams::from(args);
+
+        assert!(design_params.no_spread);
+    }
 }
