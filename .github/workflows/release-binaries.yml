@@ -115,9 +115,15 @@ jobs:
             - name: Create release and upload assets
               env:
                   GH_TOKEN: ${{ github.token }}
+                  GH_REPO: ${{ github.repository }}
               run: |
-                  assets="$(find release-assets -type f | sort)"
+                  mapfile -t assets < <(find release-assets -type f | sort)
                   prerelease_flag=""
+
+                  if [ "${#assets[@]}" -eq 0 ]; then
+                      echo "No release assets found in release-assets."
+                      exit 1
+                  fi
 
                   if [[ "$GITHUB_REF_NAME" == *-* ]]; then
                       prerelease_flag="--prerelease"
@@ -127,7 +133,7 @@ jobs:
                       if [ -n "$prerelease_flag" ]; then
                           gh release edit "$GITHUB_REF_NAME" --prerelease
                       fi
-                      gh release upload "$GITHUB_REF_NAME" $assets --clobber
+                      gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
                   else
-                      gh release create "$GITHUB_REF_NAME" $assets --title "$GITHUB_REF_NAME" --generate-notes $prerelease_flag
+                      gh release create "$GITHUB_REF_NAME" "${assets[@]}" --title "$GITHUB_REF_NAME" --generate-notes $prerelease_flag
                   fi
