@@ -10,6 +10,7 @@ jobs:
     publish-crates-io:
         name: Publish sonar-rna to crates.io
         runs-on: ubuntu-latest
+        if: startsWith(github.ref, 'refs/tags/v')
 
         steps:
             - name: Checkout repository
@@ -17,6 +18,18 @@ jobs:
 
             - name: Install Rust toolchain
               uses: dtolnay/rust-toolchain@stable
+
+            - name: Verify release tag matches crate version
+              if: startsWith(github.ref, 'refs/tags/')
+              shell: bash
+              run: |
+                  crate_version="$(cargo pkgid | sed 's/.*@//')"
+                  expected_tag="v${crate_version}"
+
+                  if [ "$GITHUB_REF_NAME" != "$expected_tag" ]; then
+                      echo "Tag $GITHUB_REF_NAME does not match crate version $crate_version; expected $expected_tag."
+                      exit 1
+                  fi
 
             - name: Verify package
               run: cargo publish --locked --dry-run

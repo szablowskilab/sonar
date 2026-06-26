@@ -7,6 +7,7 @@ repository = "https://github.com/szablowskilab/sonar"
 license = "MIT"
 readme = "README.md"
 keywords = ["rna", "bioinformatics", "cli"]
+exclude = ["flake.nix", "flake.lock", ".envrc", ".zed", ".github"]
 
 [lib]
 name = "sonar"
