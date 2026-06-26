@@ -3,8 +3,18 @@
 **Experimental** RNA sensor design tool.
 
 ## Usage
+
+The workflow is generally
+1. Generate candidate sensor library (`sonar gen`)
+2. RNA secondary structure and accessibility prediction (`RNAfold`, `RNAplfold`)
+    - Generally, RNAfold can be used to compute the whole-sensor self folding / ensemble diversity.
+    - RNAplfold is used to determine the free-sensor accessability around the edited stop codons.
+3. Interaction metrics (`IntaRNA`)
+    - sensor-target interaction energy and whether the interaction covers the edited stop regions.
+4. Non-specificity checks / transcriptome mapping (`mm2`)
+
 The `gen` command will generate a candidate sensor library from a given FASTA file containing
-the target sequence(s).
+the target sequence(s). For example,
 
 ```bash
 sonar gen target.fa 
@@ -17,6 +27,18 @@ is output in FASTA format. The output table and FASTA file paths can be set with
 section or use `sonar gen --help`.
 
 ## Installation
+
+```bash
+cargo install sonar-rna
+
+# or with binstall if you have it available
+cargo binstall sonar-rna
+```
+
+### GitHub
+
+The CLI is available in the [GitHub releases](https://github.com/szablowskilab/sonar/releases). Download the binary
+for your platform and add it to your PATH.
 
 ### Source
 
@@ -33,7 +55,7 @@ cargo build --release
 
 ### Generating sensor candidates
 
-```bash
+```
 Usage: sonar gen [OPTIONS] <TARGET>
 
 Arguments:
@@ -65,3 +87,22 @@ Options:
   -h, --help
           Print help
 ```
+
+## Library
+
+Sonar is also available as a library that you can use in your Rust projects. To add it to your project,
+add the following to your `Cargo.toml`:
+
+```toml
+[dependencies]
+sonar = { package = "sonar-rna", version = "0.1.0-alpha.1" }
+```
+
+Please refer to the [API documentation](https://docs.rs/sonar-rna) for more information.
+
+## TODO
+
+In the future, I would like to integrate folding, interaction prediction, and non-specificity checks
+directly to the library. However, this is low priority since existing tools already exist. A middle
+ground might be to add a `filter` command that allows for re-ranking and filtering based on RNAfold,
+RNAplfold, IntaRNA, and mm2 output for example.

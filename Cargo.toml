@@ -1,9 +1,15 @@
 [package]
-name = "sonar"
-version = "0.1.0"
+name = "sonar-rna"
+version = "0.1.0-alpha.1"
 edition = "2024"
+description = "Experimental RNA sensor design tool."
+repository = "https://github.com/szablowskilab/sonar"
+license = "MIT"
+readme = "README.md"
+keywords = ["rna", "bioinformatics", "cli"]
 
 [lib]
+name = "sonar"
 path = "src/lib.rs"
 
 [[bin]]
