@@ -1,8 +1,10 @@
 ## 0.1.0.alpha.2
 
 ### New
-- Add specificity module for mm2 based transcriptome mapping.
-- Add spec CLI subcommand.
+- Add mapper module for mm2 based transcriptome mapping.
+- New commands:
+  - `map`: minimap2 based transcriptome mapping.
+  - `append`: Appends forward and reverse adapter sequences to sensor sequences.
 - Add minimap2 dependency.
 
 ### Breaking Changes

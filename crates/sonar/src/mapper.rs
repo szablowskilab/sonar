@@ -19,14 +19,14 @@ pub type MappingFormatter<'a> = dyn Fn(&Mapping, &mut dyn Write) -> std::io::Res
 ///
 /// If the alignment fails, a warning is logged and the sensor candidate is not
 /// included in the output.
-pub fn check<P: AsRef<Path>>(
+pub fn map<P: AsRef<Path>>(
     sensor_path: P,
     ref_path: P,
     save_index: Option<P>,
     best_n: i32,
     allow_iupac: bool,
 ) -> Result<Vec<Mapping>> {
-    check_inner(sensor_path, ref_path, save_index, best_n, allow_iupac, None)
+    map_inner(sensor_path, ref_path, save_index, best_n, allow_iupac, None)
 }
 
 /// Map sensor candidates to a reference and write accepted mappings.
@@ -34,7 +34,7 @@ pub fn check<P: AsRef<Path>>(
 /// The writer receives one formatted row per mapping after the `max_hits`
 /// filter has accepted the sensor candidate. If `format` is `None`, mappings
 /// are written with [`mapping_to_tsv`].
-pub fn check_with_writer<P>(
+pub fn map_with_writer<P>(
     sensor_path: P,
     ref_path: P,
     save_index: Option<P>,
@@ -48,7 +48,7 @@ where
 {
     let format = format.unwrap_or(&mapping_to_paf);
 
-    check_inner(
+    map_inner(
         sensor_path,
         ref_path,
         save_index,
@@ -58,7 +58,7 @@ where
     )
 }
 
-fn check_inner<P: AsRef<Path>>(
+fn map_inner<P: AsRef<Path>>(
     sensor_path: P,
     ref_path: P,
     save_index: Option<P>,
@@ -175,7 +175,7 @@ mod tests {
 
         assert_eq!(
             String::from_utf8(output).unwrap(),
-            "sensor1\ttarget1\t1\t19\t10\t28\t+\t60\ttrue\t18\n"
+            "sensor1\t20\t1\t19\t+\ttarget1\t100\t10\t28\t18\t18\t60\n"
         );
     }
 

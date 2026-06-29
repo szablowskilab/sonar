@@ -7,13 +7,14 @@
 //!
 //! ## Tools
 //!
-//! - [`generate_ses_lib`] - Initial candidate sensor library design
+//! - [`generate_candidates`] - Initial candidate sensor library design
 //! - [`map`] - Map candidate sensors to reference transcriptome
 
 mod design;
 
 pub mod error;
+pub mod mapper;
 pub mod prelude;
-pub mod specificity;
 
 pub use design::{Candidate, DesignParams, StopEdit, generate_candidates};
+pub use mapper::{map, map_with_writer, mapping_to_paf};

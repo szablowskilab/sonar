@@ -3,7 +3,10 @@ use std::{fs, ops::RangeInclusive, path::PathBuf};
 use clap::Parser;
 use needletail::{parse_fastx_file, sequence::normalize};
 
-use crate::{error::Result, table};
+use crate::{
+    error::{Error, Result},
+    table,
+};
 use sonar::{Candidate, DesignParams, generate_candidates};
 
 pub fn generate(mut args: Args) -> Result<()> {
@@ -167,6 +170,79 @@ impl std::fmt::Display for ParseRangeError {
             }
             ParseRangeError::Min { value } => write!(f, "invalid range min: {}", value),
             ParseRangeError::Max { value } => write!(f, "invalid range max: {}", value),
+        }
+    }
+}
+
+#[derive(Debug, Parser)]
+pub struct AppendArgs {
+    /// Input sensor FASTA file
+    pub sensors: PathBuf,
+
+    /// Adapter FASTA file to append
+    pub adapters: PathBuf,
+
+    /// Write FASTA output to this path
+    #[clap(long, short = 'o')]
+    pub out_fasta: Option<PathBuf>,
+}
+
+pub fn append_adapters(args: AppendArgs) -> Result<()> {
+    let mut sensors = parse_fastx_file(&args.sensors)?;
+    let mut adapters = parse_fastx_file(&args.adapters)?;
+    let mut out = String::new();
+
+    let fwd_adapter = if let Some(adapter) = adapters.next() {
+        adapter?
+    } else {
+        return Err(Error::AdapterNotFound(AdapterNotFoundError::Forward));
+    };
+    let fwd_adapter = str::from_utf8(fwd_adapter.seq().as_ref())?.to_owned();
+
+    let rev_adapter = if let Some(adapter) = adapters.next() {
+        adapter?
+    } else {
+        return Err(Error::AdapterNotFound(AdapterNotFoundError::Reverse));
+    };
+    let rev_adapter = str::from_utf8(rev_adapter.seq().as_ref())?.to_owned();
+
+    while let Some(record) = sensors.next() {
+        let record = record?;
+        let id = str::from_utf8(record.id())?;
+        let seq = record.seq();
+        let seq = str::from_utf8(seq.as_ref())?;
+
+        out.push('>');
+        out.push_str(id);
+        out.push('\n');
+        out.push_str(&fwd_adapter);
+        out.push_str(seq);
+        out.push_str(&rev_adapter);
+        out.push('\n');
+    }
+
+    if let Some(path) = args.out_fasta {
+        fs::write(path, out)?;
+    } else {
+        print!("{out}");
+    }
+
+    Ok(())
+}
+
+#[derive(Debug)]
+pub enum AdapterNotFoundError {
+    Forward,
+    Reverse,
+}
+
+impl std::error::Error for AdapterNotFoundError {}
+
+impl std::fmt::Display for AdapterNotFoundError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AdapterNotFoundError::Forward => write!(f, "forward adapter not found"),
+            AdapterNotFoundError::Reverse => write!(f, "reverse adapter not found"),
         }
     }
 }
