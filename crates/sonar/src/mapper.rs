@@ -33,7 +33,7 @@ pub fn map<P: AsRef<Path>>(
 ///
 /// The writer receives one formatted row per mapping after the `max_hits`
 /// filter has accepted the sensor candidate. If `format` is `None`, mappings
-/// are written with [`mapping_to_tsv`].
+/// are written with [`mapping_to_paf`].
 pub fn map_with_writer<P>(
     sensor_path: P,
     ref_path: P,

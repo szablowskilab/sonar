@@ -11,7 +11,7 @@ The workflow is generally
     - RNAplfold is used to determine the free-sensor accessability around the edited stop codons.
 3. Interaction metrics (`IntaRNA`)
     - sensor-target interaction energy and whether the interaction covers the edited stop regions.
-4. Non-specificity checks / transcriptome mapping (`sonar spec`)
+4. Non-specificity checks / transcriptome mapping (`sonar map`)
 
 
 The `gen` command will generate a candidate sensor library from a given FASTA file containing
@@ -89,12 +89,12 @@ Options:
           Print help
 ```
 
-### spec
+### map
 
 ```txt
 Map RNA sensor candidates to a reference transcriptome for specificity filtering
 
-Usage: sonar spec [OPTIONS] <SENSOR_PATH> <REFERENCE_PATH>
+Usage: sonar map [OPTIONS] <SENSOR_PATH> <REFERENCE_PATH>
 
 Arguments:
   <SENSOR_PATH>     Input sensor candidates FASTA file
