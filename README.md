@@ -11,7 +11,8 @@ The workflow is generally
     - RNAplfold is used to determine the free-sensor accessability around the edited stop codons.
 3. Interaction metrics (`IntaRNA`)
     - sensor-target interaction energy and whether the interaction covers the edited stop regions.
-4. Non-specificity checks / transcriptome mapping (`mm2`)
+4. Non-specificity checks / transcriptome mapping (`sonar spec`)
+
 
 The `gen` command will generate a candidate sensor library from a given FASTA file containing
 the target sequence(s). For example,
@@ -44,16 +45,16 @@ for your platform and add it to your PATH.
 
 To build from source, make sure you have `cargo` installed. The provided Nix flake
 can be used to create a new environment with all the necessary dependencies. The
-binary can then be built using `cargo build --release`. For example:
+binary can then be built using `cargo install`. For example:
 
 ```bash
 nix develop
-cargo build --release
+cargo install --path crates/sonar-cli
 ```
 
 ## Commands
 
-### Generating sensor candidates
+### gen
 
 ```
 Usage: sonar gen [OPTIONS] <TARGET>
@@ -88,10 +89,29 @@ Options:
           Print help
 ```
 
+### spec
+
+```txt
+Map RNA sensor candidates to a reference transcriptome for specificity filtering
+
+Usage: sonar spec [OPTIONS] <SENSOR_PATH> <REFERENCE_PATH>
+
+Arguments:
+  <SENSOR_PATH>     Input sensor candidates FASTA file
+  <REFERENCE_PATH>  Reference transcriptome FASTA or index file
+
+Options:
+  -m, --best-n <BEST_N>          Number of high scoring secondary alignments to consider [default: 100]
+  -n, --allow-iupac              Allow IUPAC characters in sensor sequences
+  -i, --save-index <SAVE_INDEX>  Optionally save reference index to the provided path
+  -o, --output <OUTPUT>          Output mapping file
+  -h, --help                     Print help
+```
+
 ## Library
 
 Sonar is also available as a library that you can use in your Rust projects. To add it to your project,
-add the following to your `Cargo.toml`:
+use `cargo add sonar-rna` or add the following to your `Cargo.toml`:
 
 ```toml
 [dependencies]

@@ -3,3 +3,6 @@
 **.ps
 **.csv
 **.tsv
+**/*fold.txt
+**/*.mmi
+**/*.paf
