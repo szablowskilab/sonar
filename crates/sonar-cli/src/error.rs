@@ -18,6 +18,8 @@ pub enum Error {
     #[from]
     Sonar(sonar::prelude::Error),
     NoReferencePath,
+    #[from]
+    AdapterNotFound(design::AdapterNotFoundError),
 }
 
 impl std::fmt::Display for Error {
@@ -29,6 +31,7 @@ impl std::fmt::Display for Error {
             Error::Io(e) => write!(f, "{}", e),
             Error::Sonar(e) => write!(f, "{}", e),
             Error::NoReferencePath => write!(f, "no reference path provided"),
+            Error::AdapterNotFound(e) => write!(f, "{}", e),
         }
     }
 }
@@ -41,6 +44,7 @@ impl std::error::Error for Error {
             Error::Io(e) => Some(e),
             Error::Sonar(e) => Some(e),
             Error::NoReferencePath => None,
+            Error::AdapterNotFound(e) => Some(e),
         }
     }
 }
