@@ -1,0 +1,19 @@
+[package]
+name = "sonar-rna"
+version = "0.1.0-alpha.1"
+edition = "2024"
+description = "Experimental RNA sensor design."
+repository = "https://github.com/szablowskilab/sonar"
+license = "MIT"
+readme = "README.md"
+keywords = ["rna", "bioinformatics", "cli"]
+
+[lib]
+name = "sonar"
+path = "src/lib.rs"
+
+[dependencies]
+derive_more = { version = "2.1.1", features = ["from", "display"] }
+needletail = "0.7.3"
+minimap2 = { git = "https://github.com/nsbuitrago/minimap2-rs", branch = "feature/index-output-as-path", version = "0.1.31" }
+log = "0.4.33"

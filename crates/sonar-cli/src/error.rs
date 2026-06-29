@@ -1,4 +1,4 @@
-use super::sensors;
+use super::design;
 use derive_more::From;
 
 /// Alias for sonar CLI results.
@@ -8,7 +8,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, From)]
 pub enum Error {
     #[from]
-    ParseRange(sensors::ParseRangeError),
+    ParseRange(design::ParseRangeError),
     #[from]
     ParseFasta(needletail::errors::ParseError),
     #[from]
@@ -17,6 +17,7 @@ pub enum Error {
     Io(std::io::Error),
     #[from]
     Sonar(sonar::prelude::Error),
+    NoReferencePath,
 }
 
 impl std::fmt::Display for Error {
@@ -27,6 +28,7 @@ impl std::fmt::Display for Error {
             Error::Utf8(e) => write!(f, "{}", e),
             Error::Io(e) => write!(f, "{}", e),
             Error::Sonar(e) => write!(f, "{}", e),
+            Error::NoReferencePath => write!(f, "no reference path provided"),
         }
     }
 }
@@ -38,6 +40,7 @@ impl std::error::Error for Error {
             Error::Utf8(e) => Some(e),
             Error::Io(e) => Some(e),
             Error::Sonar(e) => Some(e),
+            Error::NoReferencePath => None,
         }
     }
 }

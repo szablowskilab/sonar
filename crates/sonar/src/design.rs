@@ -1,8 +1,6 @@
-pub mod error;
-pub mod prelude;
-
-use error::{Error, Result};
 use std::{cmp::Ordering, collections::HashSet, ops::RangeInclusive};
+
+use crate::error::{Error, Result};
 
 pub struct DesignParams {
     /// 1-based inclusive target subregion, e.g. 10:350.
@@ -64,7 +62,7 @@ pub struct Candidate {
 }
 
 /// Generate a library of candidate RNA sensors from the given target information and design parameters.
-pub fn generate_ses_lib(
+pub fn generate_candidates(
     id: &str,
     target_seq: &[u8],
     design_params: &DesignParams,
@@ -725,10 +723,10 @@ mod tests {
     }
 
     #[test]
-    fn generate_candidates() {
+    fn gen_candidate_lib() {
         let target_seq = format!("{}CCA", "A".repeat(117));
         let candidates =
-            generate_ses_lib("target1", target_seq.as_bytes(), &default_rules()).unwrap();
+            generate_candidates("target1", target_seq.as_bytes(), &default_rules()).unwrap();
         assert_eq!(candidates.len(), 1);
 
         let cand = &candidates[0];
@@ -748,7 +746,7 @@ mod tests {
         let target_seq = format!("{}CCA{}CCA", "A".repeat(117), "A".repeat(117));
         let mut rules = default_rules();
         rules.region = Some(121..=240);
-        let candidates = generate_ses_lib("target1", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target1", target_seq.as_bytes(), &rules).unwrap();
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].target_start, 121);
         assert_eq!(candidates[0].seed_target_pos, vec![238]);
@@ -762,7 +760,7 @@ mod tests {
         rules.stop_count = 2;
         rules.stop_window = 8..=12;
 
-        let candidates = generate_ses_lib("target1", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target1", target_seq.as_bytes(), &rules).unwrap();
         assert_eq!(candidates.len(), 1);
 
         let cand = &candidates[0];
@@ -781,7 +779,7 @@ mod tests {
         rules.stop_count = 2;
         rules.stop_window = 9..=15;
 
-        let candidates = generate_ses_lib("target1", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target1", target_seq.as_bytes(), &rules).unwrap();
         assert_eq!(candidates.len(), 1);
 
         let cand = &candidates[0];
@@ -798,7 +796,7 @@ mod tests {
         rules.stop_count = 4;
         rules.stop_window = 9..=15;
 
-        let candidates = generate_ses_lib("target1", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target1", target_seq.as_bytes(), &rules).unwrap();
         assert_eq!(candidates.len(), 1);
         assert_eq!(candidates[0].designed_stop_pos, vec![9, 12, 15]);
         assert_eq!(candidates[0].designed_stop_count, 3);
@@ -809,7 +807,7 @@ mod tests {
         let target_seq = format!("CAT{}CCA", "A".repeat(114));
         let mut rules = default_rules();
         rules.stop_window = 4..=4;
-        let candidates = generate_ses_lib("target2", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target2", target_seq.as_bytes(), &rules).unwrap();
         assert!(candidates.is_empty());
     }
 
@@ -822,7 +820,7 @@ mod tests {
         rules.stop_count = 2;
         rules.stop_window = 1..=13;
 
-        let candidates = generate_ses_lib("target2", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target2", target_seq.as_bytes(), &rules).unwrap();
         assert!(candidates.is_empty());
     }
 
@@ -831,7 +829,7 @@ mod tests {
         let target_seq = format!("{}TTA{}CCA", "A".repeat(4), "A".repeat(110));
         let mut rules = default_rules();
         rules.stop_window = 4..=4;
-        let candidates = generate_ses_lib("target3", target_seq.as_bytes(), &rules).unwrap();
+        let candidates = generate_candidates("target3", target_seq.as_bytes(), &rules).unwrap();
         assert!(candidates.is_empty());
     }
 }

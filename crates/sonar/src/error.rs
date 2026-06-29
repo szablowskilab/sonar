@@ -1,8 +1,10 @@
+use derive_more::From;
+
 /// Alias for sonar results.
 pub type Result<T> = std::result::Result<T, Error>;
 
 /// Errors that can occur during library generation.
-#[derive(Debug)]
+#[derive(Debug, From)]
 pub enum Error {
     InvalidStopCount,
     InvalidFrame,
@@ -20,6 +22,13 @@ pub enum Error {
     SesLongerThanTarget {
         ses_length: usize,
         target_length: usize,
+    },
+    #[from]
+    BadFastaParse(needletail::errors::ParseError),
+    #[from]
+    Io(std::io::Error),
+    FailedAlignerInit {
+        source: &'static str,
     },
 }
 
@@ -55,6 +64,11 @@ impl std::fmt::Display for Error {
                     "SES length {} is longer than target length {}",
                     ses_length, target_length
                 )
+            }
+            Error::BadFastaParse(_) => write!(f, "FASTA parse error"),
+            Error::Io(err) => write!(f, "I/O error: {}", err),
+            Error::FailedAlignerInit { source } => {
+                write!(f, "failed to initialize aligner: {}", source)
             }
         }
     }

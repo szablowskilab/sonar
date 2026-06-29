@@ -1,0 +1,20 @@
+[package]
+name = "sonar-rna-cli"
+version = "0.1.0-alpha.1"
+edition = "2024"
+description = "Experimental RNA sensor design tool."
+repository = "https://github.com/szablowskilab/sonar"
+license = "MIT"
+readme = "README.md"
+keywords = ["rna", "bioinformatics", "cli"]
+
+[[bin]]
+name = "sonar"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.6.1", features = ["derive"] }
+derive_more = { version = "2.1.1", features = ["from", "display"] }
+needletail = "0.7.3"
+sonar-rna = { path = "../sonar" }
+log = "0.4.33"

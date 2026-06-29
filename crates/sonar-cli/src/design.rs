@@ -3,10 +3,10 @@ use std::{fs, ops::RangeInclusive, path::PathBuf};
 use clap::Parser;
 use needletail::{parse_fastx_file, sequence::normalize};
 
-use crate::cli::{error::Result, table};
-use sonar::{Candidate, DesignParams, generate_ses_lib};
+use crate::{error::Result, table};
+use sonar::{Candidate, DesignParams, generate_candidates};
 
-pub fn generate_candidates(mut args: Args) -> Result<()> {
+pub fn generate(mut args: Args) -> Result<()> {
     let mut fasta_reader = parse_fastx_file(&args.target)?;
     let table_path = args.table.take();
     let fasta_path = args.fasta.take();
@@ -18,7 +18,7 @@ pub fn generate_candidates(mut args: Args) -> Result<()> {
         let seq =
             normalize(record.raw_seq(), design_rules.allow_iupac).unwrap_or(record.seq().to_vec());
 
-        let candidate_sublibrary = generate_ses_lib(id, &seq, &design_rules)?;
+        let candidate_sublibrary = generate_candidates(id, &seq, &design_rules)?;
         candidates.extend(candidate_sublibrary);
     }
 
@@ -55,47 +55,47 @@ pub struct Args {
     pub target: PathBuf,
 
     /// 1-based inclusive target subregion, e.g. 10:350
-    #[clap(long, value_parser = parse_range)]
+    #[clap(long, short = 'r', value_parser = parse_range)]
     pub region: Option<RangeInclusive<usize>>,
 
     /// sesRNA length range in nucleotides as min:max
-    #[clap(long, value_parser = parse_range, default_value = "200:300")]
+    #[clap(long, short = 'l', value_parser = parse_range, default_value = "200:300")]
     pub ses_length: RangeInclusive<usize>,
 
     /// Number of designed TAG stop codons to include
-    #[clap(long, default_value_t = 1)]
+    #[clap(long, short = 's', default_value_t = 1)]
     pub stop_count: usize,
 
     /// allowed design stop position window as min:max from the sesRNA 5' end
-    #[clap(long, value_parser = parse_range, default_value = "80:220")]
+    #[clap(long, short = 'w', value_parser = parse_range, default_value = "80:220")]
     pub stop_window: RangeInclusive<usize>,
 
     /// Minimum distance between designed TAG and any converted stop codons
-    #[clap(long, default_value_t = 10)]
+    #[clap(long, short = 'd', default_value_t = 10)]
     pub min_stop_distance: usize,
 
     /// Translation frame for stop and ATG checks
-    #[clap(long, default_value_t = 0)]
+    #[clap(long, short = 'o', default_value_t = 0)]
     pub frame: usize,
 
     /// Max number of candidates to output
-    #[clap(long, default_value_t = 100)]
+    #[clap(long, short = 'm', default_value_t = 100)]
     pub max_candidates: usize,
 
     /// Do not spread out candidate designs across the target sequence
-    #[clap(long, default_value_t = false)]
+    #[clap(long, short = 'x', default_value_t = false)]
     pub no_spread: bool,
 
     /// Allow IUPAC nucleotide codes in the target sequence
-    #[clap(long, default_value_t = false)]
+    #[clap(long, short = 'n', default_value_t = false)]
     pub allow_iupac: bool,
 
     /// Write table to this path instead of stdout
-    #[clap(long)]
+    #[clap(long, short = 't')]
     pub table: Option<PathBuf>,
 
     /// Write FASTA output to this path instead of stdout
-    #[clap(long)]
+    #[clap(long, short = 'f')]
     pub fasta: Option<PathBuf>,
 }
 
@@ -121,7 +121,7 @@ impl From<Args> for DesignParams {
 pub fn parse_range(value: &str) -> std::result::Result<RangeInclusive<usize>, String> {
     let parts: Vec<_> = value.split(':').collect();
     if parts.len() != 2 {
-        return Err(ParseRangeError::InvalidFormat {
+        return Err(ParseRangeError::Format {
             recieved: value.to_string(),
         }
         .to_string());
@@ -134,13 +134,13 @@ pub fn parse_range(value: &str) -> std::result::Result<RangeInclusive<usize>, St
         .parse()
         .map_err(|e: std::num::ParseIntError| e.to_string())?;
     if min == 0 {
-        return Err(ParseRangeError::InvalidMin {
+        return Err(ParseRangeError::Min {
             value: min.to_string(),
         }
         .to_string());
     }
     if max < min {
-        return Err(ParseRangeError::InvalidMax {
+        return Err(ParseRangeError::Max {
             value: max.to_string(),
         }
         .to_string());
@@ -152,9 +152,9 @@ pub fn parse_range(value: &str) -> std::result::Result<RangeInclusive<usize>, St
 /// Additional errors that can occur when parsing a range string.
 #[derive(Debug)]
 pub enum ParseRangeError {
-    InvalidFormat { recieved: String },
-    InvalidMin { value: String },
-    InvalidMax { value: String },
+    Format { recieved: String },
+    Min { value: String },
+    Max { value: String },
 }
 
 impl std::error::Error for ParseRangeError {}
@@ -162,11 +162,11 @@ impl std::error::Error for ParseRangeError {}
 impl std::fmt::Display for ParseRangeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseRangeError::InvalidFormat { recieved } => {
+            ParseRangeError::Format { recieved } => {
                 write!(f, "invalid range format: Expected: x:y, got: {}", recieved)
             }
-            ParseRangeError::InvalidMin { value } => write!(f, "invalid range min: {}", value),
-            ParseRangeError::InvalidMax { value } => write!(f, "invalid range max: {}", value),
+            ParseRangeError::Min { value } => write!(f, "invalid range min: {}", value),
+            ParseRangeError::Max { value } => write!(f, "invalid range max: {}", value),
         }
     }
 }
@@ -195,7 +195,7 @@ mod tests {
         assert!(result.is_err());
         assert_eq!(
             result.unwrap_err(),
-            ParseRangeError::InvalidFormat {
+            ParseRangeError::Format {
                 recieved: "invalid".to_string()
             }
             .to_string()
