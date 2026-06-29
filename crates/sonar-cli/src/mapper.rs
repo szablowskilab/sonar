@@ -8,7 +8,7 @@ use clap::{Parser, builder};
 
 use crate::error::Result;
 
-pub fn check(args: Args) -> Result<()> {
+pub fn map_to_ref(args: Args) -> Result<()> {
     let mut mapping_writer: Box<dyn Write> = if let Some(output) = &args.output {
         let mapping_file = File::create(output)?;
         Box::new(BufWriter::new(mapping_file))
@@ -16,7 +16,7 @@ pub fn check(args: Args) -> Result<()> {
         Box::new(BufWriter::new(std::io::stdout()))
     };
 
-    let _sensor_mappings = sonar::specificity::check_with_writer(
+    let _sensor_mappings = sonar::map_with_writer(
         args.sensor_path,
         args.reference_path,
         args.save_index,
