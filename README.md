@@ -15,7 +15,7 @@ The workflow is generally
 
 
 The `gen` command will generate a candidate sensor library from a given FASTA file containing
-the target sequence(s). For example,
+one or more target sequences. For example,
 
 ```bash
 sonar gen target.fa 
@@ -23,8 +23,10 @@ sonar gen target.fa
 
 This will produce a columnar output (default `tsv`) containing the candidate sensor information
 like the target ID, start position, end position, GC content, etc. The sensor sequence information
-is output in FASTA format. The output table and FASTA file paths can be set with the `--table` and
-`--fasta` options. For a full list of options, see the [Commands](#commands)
+is also written in FASTA format to stdout when `--fasta` is not provided. Candidate IDs are generated
+as `{sanitized_target_id}_ses_{id}` where `sanitized_target_id` preserves only letters, digits, `.`,
+`_`, and `-`, replacing other characters with `_`. The output table and FASTA file paths can be set
+with the `--table` and `--fasta` options. For a full list of options, see the [Commands](#commands)
 section or use `sonar gen --help`.
 
 ## Installation

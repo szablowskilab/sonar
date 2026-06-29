@@ -16,5 +16,5 @@ pub mod error;
 pub mod mapper;
 pub mod prelude;
 
-pub use design::{Candidate, DesignParams, StopEdit, generate_candidates};
+pub use design::{Candidate, DesignParams, StopEdit, generate_candidates, sanitize_target_id};
 pub use mapper::{map, map_with_writer, mapping_to_paf};

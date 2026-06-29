@@ -30,6 +30,10 @@ pub enum Error {
     FailedAlignerInit {
         source: &'static str,
     },
+    SanitizedTargetIdCollision {
+        original_ids: Vec<String>,
+        sanitized_id: String,
+    },
 }
 
 impl std::error::Error for Error {}
@@ -69,6 +73,17 @@ impl std::fmt::Display for Error {
             Error::Io(err) => write!(f, "I/O error: {}", err),
             Error::FailedAlignerInit { source } => {
                 write!(f, "failed to initialize aligner: {}", source)
+            }
+            Error::SanitizedTargetIdCollision {
+                original_ids,
+                sanitized_id,
+            } => {
+                write!(
+                    f,
+                    "multiple target IDs sanitize to '{}': {}",
+                    sanitized_id,
+                    original_ids.join(", ")
+                )
             }
         }
     }

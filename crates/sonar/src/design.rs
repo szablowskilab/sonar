@@ -48,14 +48,11 @@ pub struct Candidate {
     pub target_end: usize,
     pub ses_length: usize,
     pub seed_target_pos: Vec<usize>,
-    pub seed_sequence: String,
     pub designed_stop_pos: Vec<usize>,
     pub final_sesrna: String,
     pub edited_stops: Vec<StopEdit>,
-    pub downstream_atg: bool,
     pub gc_content: f64,
     pub score: f64,
-    pub fail_reason: String,
     pub designed_stop_count: usize,
     pub window_index: usize,
     pub seed_index: usize,
@@ -69,6 +66,7 @@ pub fn generate_candidates(
 ) -> Result<Vec<Candidate>> {
     validate_rules(design_params)?;
 
+    let sanitized_target_id = sanitize_target_id(id);
     let (region_start0, region_end1) = get_ses_region(target_seq, design_params.region.as_ref())?;
     let ses_length = get_mean_ses_length(&design_params.ses_length, target_seq.len())?;
     let seeds = find_seeds(target_seq, region_start0, region_end1);
@@ -132,7 +130,7 @@ pub fn generate_candidates(
             let gc = gc_content(&ses);
             let edit_count = edits.len();
             candidates.push(Candidate {
-                id: format!("cand_{candidate_index:04}"),
+                id: format!("{sanitized_target_id}_ses_{candidate_index:04}"),
                 target_id: id.to_string(),
                 target_start: window_start0 + 1,
                 target_end: window_end0,
@@ -141,11 +139,9 @@ pub fn generate_candidates(
                     .iter()
                     .map(|stop| stop.seed_start0 + 1)
                     .collect(),
-                seed_sequence: "CCA".to_string(),
                 designed_stop_pos: designed_stops.iter().map(|stop0| stop0 + 1).collect(),
                 final_sesrna: String::from_utf8(ses).expect("sequence should remain ASCII"),
                 edited_stops: edits,
-                downstream_atg: false,
                 gc_content: gc,
                 score: score_candidate(
                     gc,
@@ -153,7 +149,6 @@ pub fn generate_candidates(
                     &designed_stops,
                     design_params.stop_window.clone(),
                 ),
-                fail_reason: String::new(),
                 designed_stop_count: designed_stops.len(),
                 window_index,
                 seed_index,
@@ -544,6 +539,22 @@ fn complement(base: u8) -> u8 {
     }
 }
 
+pub fn sanitize_target_id(id: &str) -> String {
+    let sanitized = id
+        .chars()
+        .map(|ch| match ch {
+            'A'..='Z' | 'a'..='z' | '0'..='9' | '.' | '_' | '-' => ch,
+            _ => '_',
+        })
+        .collect::<String>();
+
+    if sanitized.is_empty() || sanitized.chars().all(|ch| ch == '_') {
+        "target".to_string()
+    } else {
+        sanitized
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -578,14 +589,11 @@ mod tests {
             target_end,
             ses_length: target_end - target_start + 1,
             seed_target_pos: Vec::new(),
-            seed_sequence: "CCA".to_string(),
             designed_stop_pos: Vec::new(),
             final_sesrna: String::new(),
             edited_stops: Vec::new(),
-            downstream_atg: false,
             gc_content: 50.0,
             score,
-            fail_reason: String::new(),
             designed_stop_count: 1,
             window_index: 0,
             seed_index: 0,
@@ -735,9 +743,8 @@ mod tests {
         assert_eq!(cand.seed_target_pos, vec![118]);
         assert_eq!(cand.designed_stop_pos, vec![1]);
         assert!(cand.final_sesrna.starts_with("TAG"));
-        assert!(!cand.downstream_atg);
 
-        assert_eq!(cand.id, "cand_0001");
+        assert_eq!(cand.id, "target1_ses_0001");
         assert_eq!(cand.designed_stop_count, 1);
     }
 
@@ -831,5 +838,16 @@ mod tests {
         rules.stop_window = 4..=4;
         let candidates = generate_candidates("target3", target_seq.as_bytes(), &rules).unwrap();
         assert!(candidates.is_empty());
+    }
+
+    #[test]
+    fn sanitize_target_id_replaces_disallowed_chars() {
+        assert_eq!(sanitize_target_id("target 1/a"), "target_1_a");
+    }
+
+    #[test]
+    fn sanitize_target_id_falls_back_for_empty_or_all_underscores() {
+        assert_eq!(sanitize_target_id(""), "target");
+        assert_eq!(sanitize_target_id("%%%"), "target");
     }
 }

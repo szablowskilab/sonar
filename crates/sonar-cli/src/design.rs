@@ -1,4 +1,4 @@
-use std::{fs, ops::RangeInclusive, path::PathBuf};
+use std::{collections::HashMap, fs, ops::RangeInclusive, path::PathBuf};
 
 use clap::Parser;
 use needletail::{parse_fastx_file, sequence::normalize};
@@ -7,7 +7,7 @@ use crate::{
     error::{Error, Result},
     table,
 };
-use sonar::{Candidate, DesignParams, generate_candidates};
+use sonar::{Candidate, DesignParams, generate_candidates, sanitize_target_id};
 
 pub fn generate(mut args: Args) -> Result<()> {
     let mut fasta_reader = parse_fastx_file(&args.target)?;
@@ -15,17 +15,37 @@ pub fn generate(mut args: Args) -> Result<()> {
     let fasta_path = args.fasta.take();
     let design_rules: DesignParams = args.into();
     let mut candidates: Vec<Candidate> = Vec::new();
+    let mut target_count = 0usize;
+    let mut sanitized_ids: HashMap<String, Vec<String>> = HashMap::new();
 
-    while let Some(Ok(record)) = fasta_reader.next() {
-        let id = str::from_utf8(record.id())?;
-        let seq =
-            normalize(record.raw_seq(), design_rules.allow_iupac).unwrap_or(record.seq().to_vec());
+    while let Some(record) = fasta_reader.next() {
+        let record = record?;
+        target_count += 1;
+        let id = str::from_utf8(record.id())?.to_owned();
+        let sanitized_id = sanitize_target_id(&id);
+        sanitized_ids.entry(sanitized_id).or_default().push(id.clone());
 
-        let candidate_sublibrary = generate_candidates(id, &seq, &design_rules)?;
+        let seq = normalize(record.raw_seq(), design_rules.allow_iupac).unwrap_or(record.seq().to_vec());
+        let candidate_sublibrary = generate_candidates(&id, &seq, &design_rules)?;
         candidates.extend(candidate_sublibrary);
     }
 
+    if target_count == 0 {
+        return Err(Error::NoTargetSequence);
+    }
+
+    if let Some((sanitized_id, original_ids)) = sanitized_ids
+        .into_iter()
+        .find(|(_, ids)| ids.len() > 1 && ids.iter().any(|id| id != &ids[0]))
+    {
+        return Err(Error::Sonar(sonar::prelude::Error::SanitizedTargetIdCollision {
+            original_ids,
+            sanitized_id,
+        }));
+    }
+
     let table = table::render_tsv(&candidates);
+    let fasta = render_fasta(&candidates);
 
     if let Some(path) = table_path {
         fs::write(path, table)?;
@@ -34,7 +54,9 @@ pub fn generate(mut args: Args) -> Result<()> {
     }
 
     if let Some(path) = fasta_path {
-        fs::write(path, render_fasta(&candidates))?;
+        fs::write(path, fasta)?;
+    } else {
+        print!("{fasta}");
     }
 
     Ok(())
@@ -125,7 +147,7 @@ pub fn parse_range(value: &str) -> std::result::Result<RangeInclusive<usize>, St
     let parts: Vec<_> = value.split(':').collect();
     if parts.len() != 2 {
         return Err(ParseRangeError::Format {
-            recieved: value.to_string(),
+            received: value.to_string(),
         }
         .to_string());
     }
@@ -155,7 +177,7 @@ pub fn parse_range(value: &str) -> std::result::Result<RangeInclusive<usize>, St
 /// Additional errors that can occur when parsing a range string.
 #[derive(Debug)]
 pub enum ParseRangeError {
-    Format { recieved: String },
+    Format { received: String },
     Min { value: String },
     Max { value: String },
 }
@@ -165,8 +187,8 @@ impl std::error::Error for ParseRangeError {}
 impl std::fmt::Display for ParseRangeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ParseRangeError::Format { recieved } => {
-                write!(f, "invalid range format: Expected: x:y, got: {}", recieved)
+            ParseRangeError::Format { received } => {
+                write!(f, "invalid range format: Expected: x:y, got: {}", received)
             }
             ParseRangeError::Min { value } => write!(f, "invalid range min: {}", value),
             ParseRangeError::Max { value } => write!(f, "invalid range max: {}", value),
@@ -272,7 +294,7 @@ mod tests {
         assert_eq!(
             result.unwrap_err(),
             ParseRangeError::Format {
-                recieved: "invalid".to_string()
+                received: "invalid".to_string()
             }
             .to_string()
         );
